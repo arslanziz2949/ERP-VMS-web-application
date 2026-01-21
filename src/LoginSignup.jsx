@@ -30,9 +30,15 @@ const LoginSignup = () => {
     const [loading, setLoading] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [formData, setFormData] = useState({
+        // Common fields
         username: "",
         password: "",
+        
+        // Registration specific fields
+        fullName: "",
         confirmPassword: "",
+        
+        // Other fields
         email: "",
         first_name: "",
         last_name: "",
@@ -42,6 +48,16 @@ const LoginSignup = () => {
         rememberMe: false,
     });
 
+    // State to track focused fields
+    const [focusedFields, setFocusedFields] = useState({
+        fullName: false,
+        username: false,
+        password: false,
+        confirmPassword: false,
+    });
+
+    // State for field errors
+    const [fieldErrors, setFieldErrors] = useState({});
 
     // Check if mobile
     useEffect(() => {
@@ -60,31 +76,61 @@ const LoginSignup = () => {
             ...formData,
             [name]: type === 'checkbox' ? checked : value
         });
+        
+        // Clear error for this field when user starts typing
+        if (fieldErrors[name]) {
+            setFieldErrors({
+                ...fieldErrors,
+                [name]: null
+            });
+        }
+    };
+
+    const handleFocus = (fieldName) => {
+        setFocusedFields(prev => ({
+            ...prev,
+            [fieldName]: true
+        }));
+    };
+
+    const handleBlur = (fieldName) => {
+        const fieldValue = formData[fieldName];
+        if (!fieldValue) {
+            setFocusedFields(prev => ({
+                ...prev,
+                [fieldName]: false
+            }));
+        }
     };
 
     const validateForm = () => {
-        if (!isLogin && !formData.name.trim()) {
-            toast.error('Name is required');
-            return false;
+        const errors = {};
+        
+        // Registration validation
+        if (!isLogin) {
+            if (!formData.fullName.trim()) {
+                errors.fullName = ['Full name is required'];
+            }
         }
 
         if (!formData.username.trim()) {
-            toast.error('username is required');
-            return false;
-        }
-
-        else if (!formData.username) {
-            toast.error('Please enter a valid username address');
-            return false;
+            errors.username = ['Username is required'];
         }
 
         if (!formData.password) {
-            toast.error('Password is required');
-            return false;
+            errors.password = ['Password is required'];
         }
 
         if (!isLogin && formData.password !== formData.confirmPassword) {
-            toast.error('Passwords do not match');
+            errors.confirmPassword = ['Passwords do not match'];
+        }
+
+        setFieldErrors(errors);
+        
+        // Show first error as toast
+        const firstErrorKey = Object.keys(errors)[0];
+        if (firstErrorKey) {
+            toast.error(errors[firstErrorKey][0]);
             return false;
         }
 
@@ -99,94 +145,221 @@ const LoginSignup = () => {
         setLoading(true);
 
         try {
-            console.log("🔐 LOGIN API CALLED");
+            if (isLogin) {
+                // Login logic
+                console.log("🔐 LOGIN API CALLED");
 
-            const response = await axios.post(
-                urls.login,
-                {
+                const response = await axios.post(
+                    urls.login,
+                    {
+                        username: formData.username,
+                        password: formData.password,
+                    },
+                    {
+                        headers: { "Content-Type": "application/json" },
+                        timeout: 15000,
+                    }
+                );
+
+                console.log("✅ LOGIN SUCCESS");
+                console.log("📦 Full Response:", response.data);
+
+                const { access, refresh, user } = response.data;
+
+                // ✅ Save tokens
+                if (access) {
+                    localStorage.setItem("access_token", access);
+                    console.log("🔑 Access token saved");
+                }
+
+                if (refresh) {
+                    localStorage.setItem("refresh_token", refresh);
+                    console.log("🔁 Refresh token saved");
+                }
+
+                if (user) {
+                    const userData = {
+                        ...user,
+                        role: user.role || null,
+                    };
+                    localStorage.setItem("user", JSON.stringify(userData));
+                    console.log("👤 User saved:", userData);
+
+                    const userRole = user.role;
+
+                    console.log("🎯 User role:", userRole);
+
+                    if (userRole === 'admin') {
+                        toast.success("Welcome Admin! Redirecting to Admin Dashboard...");
+                        setTimeout(() => {
+                            navigate("/adminDashboard");
+                        }, 1500);
+                    } else if (userRole === 'client') { 
+                        toast.success("Welcome Client! Redirecting to Client Dashboard...");
+                        setTimeout(() => {
+                            navigate("/clientDashboard");
+                        }, 1500);
+                    } else {
+                        toast.success("Welcome Super Admin! Redirecting to Super Admin Dashboard...");
+                        setTimeout(() => {
+                            navigate("/superAdminDashboard");
+                        }, 1500);
+                    }
+                }
+            } else {
+                // Registration logic
+                console.log("📝 REGISTRATION API CALLED");
+                
+                // Extract first and last name from full name
+                const nameParts = formData.fullName.split(' ');
+                const first_name = nameParts[0] || '';
+                const last_name = nameParts.slice(1).join(' ') || '';
+                
+                const registrationData = {
                     username: formData.username,
                     password: formData.password,
-                },
-                {
-                    headers: { "Content-Type": "application/json" },
-                    timeout: 10000,
-                }
-            );
-
-            console.log("✅ LOGIN SUCCESS");
-            console.log("📦 Full Response:", response.data);
-
-            const { access, refresh, user } = response.data;
-
-            // ✅ Save tokens
-            if (access) {
-                localStorage.setItem("access_token", access);
-                console.log("🔑 Access token saved");
-            }
-
-            if (refresh) {
-                localStorage.setItem("refresh_token", refresh);
-                console.log("🔁 Refresh token saved");
-            }
-
-            if (user) {
-                const userData = {
-                    ...user,
-                    role: user.role || null,
+                    email: formData.username, // Using username as email
+                    first_name: first_name,
+                    last_name: last_name,
+                    phone_number: "", // Empty as per requirements
+                    address: "", // Empty as per requirements
+                    image: "profile.png", // Default value
+                    client_code: "" // Empty as per requirements
                 };
-                localStorage.setItem("user", JSON.stringify(userData));
-                console.log("👤 User saved:", userData);
 
-                const userRole = user.role;
+                console.log("Registration Data:", registrationData);
 
-                console.log("🎯 User role:", userRole);
+                // Call your registration API endpoint
+                // Note: You need to update this with your actual registration endpoint
+                const response = await axios.post(
+                    urls.register || '/api/register/', // Update with your actual endpoint
+                    registrationData,
+                    {
+                        headers: { "Content-Type": "application/json" },
+                        timeout: 10000,
+                    }
+                );
 
-                if (userRole === 'admin') {
-                    toast.success("Welcome Admin! Redirecting to Admin Dashboard...");
-                    setTimeout(() => {
-                        navigate("/adminDashboard");
-                    }, 1500);
-                } else if (userRole === 'client') { 
-                    toast.success("Welcome Client! Redirecting to Client Dashboard...");
-                    setTimeout(() => {
-                        navigate("/clientDashboard");
-                    }, 1500);
-                } else {
-                    toast.success("Welcome Super Admin! Redirecting to Super Admin Dashboard...");
-                    setTimeout(() => {
-                        navigate("/superAdminDashboard");
-                    }, 1500);
-                }
+                console.log("✅ REGISTRATION SUCCESS");
+                console.log("📦 Response:", response.data);
+
+                toast.success("Registration successful! Please login.");
+                
+                // Clear registration form data
+                setFormData({
+                    ...formData,
+                    fullName: "",
+                    confirmPassword: "",
+                });
+                
+                // Clear focused fields
+                setFocusedFields({
+                    ...focusedFields,
+                    fullName: false,
+                    confirmPassword: false,
+                });
+                
+                // Switch to login mode
+                setIsLogin(true);
             }
 
         } catch (error) {
-            console.error("❌ LOGIN ERROR");
-
+            console.error("❌ ERROR:", isLogin ? "Login" : "Registration");
             console.error({
                 status: error.response?.status,
                 data: error.response?.data,
                 message: error.message,
             });
 
-            toast.error(
-                error.response?.data?.detail ||
-                error.response?.data?.message ||
-                "Login failed"
-            );
+            // Handle API validation errors
+            if (error.response?.data) {
+                const apiErrors = error.response.data;
+                setFieldErrors(apiErrors);
+                
+                // Show first error as toast
+                const firstErrorKey = Object.keys(apiErrors)[0];
+                if (firstErrorKey && apiErrors[firstErrorKey]) {
+                    toast.error(Array.isArray(apiErrors[firstErrorKey]) 
+                        ? apiErrors[firstErrorKey][0] 
+                        : apiErrors[firstErrorKey]
+                    );
+                } else {
+                    toast.error(error.response?.data?.detail || 
+                               error.response?.data?.message || 
+                               (isLogin ? "Login failed" : "Registration failed"));
+                }
+            } else {
+                toast.error(isLogin ? "Login failed" : "Registration failed");
+            }
         } finally {
             setLoading(false);
         }
     };
 
-
-
     const toggleMode = () => {
         setIsLogin(!isLogin);
+        // Clear errors when switching modes
+        setFieldErrors({});
     };
 
     const handleForgotPassword = () => {
-        toast.info('Password reset link would be sent to your username');
+        toast.info('Password reset link would be sent to your email');
     };
+
+    // Custom style function for text fields
+    const getTextFieldStyles = (fieldName, hasIcon = true) => ({
+        '& .MuiOutlinedInput-root': {
+            '& fieldset': {
+                borderColor: 'rgba(255, 255, 255, 0.4)',
+                borderRadius: '8px',
+            },
+            '&:hover fieldset': {
+                borderColor: 'rgba(255, 255, 255, 0.6)',
+            },
+            '&.Mui-focused fieldset': {
+                borderColor: '#f0f0f0',
+            },
+            '&.Mui-error fieldset': {
+                borderColor: '#ff6b6b',
+            },
+            background: 'transparent',
+            '& .MuiInputAdornment-positionStart': {
+                marginRight: '12px',
+            }
+        },
+        '& .MuiInputLabel-root': {
+            color: 'rgba(255, 255, 255, 0.7)',
+            '&.Mui-focused': {
+                color: '#f0f0f0',
+            },
+            '&.Mui-error': {
+                color: '#ff6b6b',
+            },
+            transform: `translate(${hasIcon ? '48px' : '14px'}, 16px) scale(1)`,
+            '&.MuiInputLabel-shrink': {
+                transform: `translate(${hasIcon ? '18px' : '14px'}, -10px) scale(0.75)`,
+            },
+        },
+        '& .MuiInputBase-input': {
+            color: '#f0f0f0',
+            padding: isMobile
+                ? (hasIcon ? '14px 12px 14px 6px' : '14px 12px')
+                : (hasIcon ? '16px 12px 16px 6px' : '16px 12px'),
+            fontSize: isMobile ? '0.95rem' : '1rem',
+            '&::placeholder': {
+                color: 'rgba(255, 255, 255, 0.5)',
+                opacity: 1,
+            },
+        },
+        '& .MuiInputBase-input[type="password"]': {
+            letterSpacing: '1px',
+        },
+        '& .MuiFormHelperText-root': {
+            color: '#ff6b6b',
+            marginLeft: 0,
+        },
+        marginBottom: isMobile ? '15px' : '20px',
+    });
 
     // CSS keyframes for animations
     const floatingAnimation = `
@@ -238,7 +411,6 @@ const LoginSignup = () => {
             overflow: 'hidden',
             fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
         }}>
-            {/* Add CSS animations */}
             <style>{floatingAnimation}</style>
 
             {/* Animated Background */}
@@ -248,9 +420,6 @@ const LoginSignup = () => {
                 left: 0,
                 width: '100%',
                 height: '100%',
-
-
-
                 zIndex: 1
             }}>
                 {[...Array(10)].map((_, i) => (
@@ -320,16 +489,16 @@ const LoginSignup = () => {
                     </div>
                 </div>
 
-                {/* Right Side - Form */}
+                {/* Right Side - Form with Blue Background */}
                 <div style={{
                     flex: 1,
                     padding: isMobile ? '30px 20px 40px' : '60px 40px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: '#007cba',
+                    background: '#007cba', // Blue background
                     position: 'relative',
-                    overflow: 'hidden',
+                    overflow: isLogin ? 'hidden' : 'auto',
                     borderRadius: isMobile ? '20px 20px 0 0' : '0 15px 15px 0',
                     marginTop: isMobile ? '-30px' : 0,
                     minHeight: isMobile ? '70vh' : 'auto'
@@ -472,366 +641,230 @@ const LoginSignup = () => {
                             fontSize: isMobile ? '1.6rem' : '2rem',
                             fontWeight: 700,
                             color: '#f0f0f0',
-                            marginBottom: isMobile ? '15px' : '10px',
+                            marginBottom: isMobile ? '15px' : '20px',
                             textAlign: 'center'
                         }}>
                             {isLogin ? 'Welcome Back' : 'Create Account'}
                         </h2>
 
                         <form onSubmit={handleSubmit}>
-                            {/* Name Field - Only for Signup */}
+                            {/* Full Name Field - Only for Registration */}
                             {!isLogin && (
-                                <div style={{ marginBottom: isMobile ? '15px' : '20px' }}>
-                                    <div style={{
-                                        position: 'relative',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        background: 'rgba(255, 255, 255, 0.1)',
-                                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                                        borderRadius: '8px',
-                                        transition: 'all 0.3s ease'
-                                    }}>
-                                        <span style={{
-                                            padding: '0 16px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}>
-                                            <svg style={{
-                                                width: '18px',
-                                                height: '18px',
-                                                stroke: 'rgba(255, 255, 255, 0.8)',
-                                                strokeWidth: '2',
-                                                fill: 'none'
-                                            }} viewBox="0 0 24 24">
-                                                <path d="M20 21V19C20 16.7909 18.2091 15 16 15H8C5.79086 15 4 16.7909 4 19V21" />
-                                                <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" />
-                                            </svg>
-                                        </span>
-                                        <input
-                                            type="text"
-                                            name="name"
-                                            value={formData.name}
-                                            onChange={handleInputChange}
-                                            placeholder="Full Name"
-                                            style={{
-                                                flex: 1,
-                                                padding: isMobile ? '14px 16px' : '16px 20px',
-                                                border: 'none',
-                                                background: 'transparent',
-                                                color: '#f0f0f0',
-                                                fontSize: isMobile ? '0.95rem' : '1rem',
-                                                outline: 'none',
-                                                fontFamily: 'inherit'
-                                            }}
-                                        />
-                                    </div>
+                                <div>
+                                    <TextField
+                                        fullWidth
+                                        name="fullName"
+                                        label="Full Name"
+                                        variant="outlined"
+                                        value={formData.fullName}
+                                        onChange={handleInputChange}
+                                        error={!!fieldErrors.fullName}
+                                        helperText={fieldErrors.fullName?.[0]}
+                                        onFocus={() => handleFocus('fullName')}
+                                        onBlur={() => handleBlur('fullName')}
+                                        InputLabelProps={{
+                                            shrink: focusedFields.fullName || !!formData.fullName,
+                                        }}
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start" sx={{ marginRight: '12px' }}>
+                                                    <PersonIcon sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />
+                                                </InputAdornment>
+                                            ),
+                                            placeholder: !focusedFields.fullName && !formData.fullName ? 'Full Name' : '',
+                                        }}
+                                        sx={getTextFieldStyles('fullName', true)}
+                                    />
                                 </div>
                             )}
 
-                            {/* username Field */}
-                            <div style={{ marginBottom: isMobile ? '15px' : '20px' }}>
-                                <div style={{
-                                    position: 'relative',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    background: 'rgba(255, 255, 255, 0.1)',
-                                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                                    borderRadius: '8px',
-                                    transition: 'all 0.3s ease'
-                                }}>
-                                    <span style={{
-                                        padding: '0 16px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}>
-                                        <svg style={{
-                                            width: '18px',
-                                            height: '18px',
-                                            stroke: 'rgba(255, 255, 255, 0.8)',
-                                            strokeWidth: '2',
-                                            fill: 'none'
-                                        }} viewBox="0 0 24 24">
-                                            <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" />
-                                            <path d="M22 6L12 13L2 6" />
-                                        </svg>
-                                    </span>
-                                    <input
-                                        type="username"
-                                        name="username"
-                                        value={formData.username}
-                                        onChange={handleInputChange}
-                                        placeholder="username Address"
-                                        style={{
-                                            flex: 1,
-                                            padding: isMobile ? '14px 16px' : '16px 20px',
-                                            border: 'none',
-                                            background: 'transparent',
-                                            color: '#f0f0f0',
-                                            fontSize: isMobile ? '0.95rem' : '1rem',
-                                            outline: 'none',
-                                            fontFamily: 'inherit'
-                                        }}
-                                    />
-                                </div>
+                            {/* Username Field */}
+                            <div>
+                                <TextField
+                                    fullWidth
+                                    name="username"
+                                    label="Username"
+                                    variant="outlined"
+                                    value={formData.username}
+                                    onChange={handleInputChange}
+                                    error={!!fieldErrors.username}
+                                    helperText={fieldErrors.username?.[0]}
+                                    onFocus={() => handleFocus('username')}
+                                    onBlur={() => handleBlur('username')}
+                                    InputLabelProps={{
+                                        shrink: focusedFields.username || !!formData.username,
+                                    }}
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start" sx={{ marginRight: '12px' }}>
+                                                <EmailIcon sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />
+                                            </InputAdornment>
+                                        ),
+                                        placeholder: !focusedFields.username && !formData.username ? 'Username' : '',
+                                    }}
+                                    sx={getTextFieldStyles('username', true)}
+                                />
                             </div>
 
                             {/* Password Field */}
-                            <div style={{ marginBottom: isMobile ? '15px' : '20px' }}>
-                                <div style={{
-                                    position: 'relative',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    background: 'rgba(255, 255, 255, 0.1)',
-                                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                                    borderRadius: '8px',
-                                    transition: 'all 0.3s ease'
-                                }}>
-                                    <span style={{
-                                        padding: '0 16px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}>
-                                        <svg style={{
-                                            width: '18px',
-                                            height: '18px',
-                                            stroke: 'rgba(255, 255, 255, 0.8)',
-                                            strokeWidth: '2',
-                                            fill: 'none'
-                                        }} viewBox="0 0 24 24">
-                                            <path d="M19 11H5C3.89543 11 3 11.8954 3 13V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V13C21 11.8954 20.1046 11 19 11Z" />
-                                            <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" />
-                                        </svg>
-                                    </span>
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        name="password"
-                                        value={formData.password}
-                                        onChange={handleInputChange}
-                                        placeholder="Password"
-                                        style={{
-                                            flex: 1,
-                                            padding: isMobile ? '14px 16px' : '16px 20px',
-                                            border: 'none',
-                                            background: 'transparent',
-                                            color: '#f0f0f0',
-                                            fontSize: isMobile ? '0.95rem' : '1rem',
-                                            outline: 'none',
-                                            fontFamily: 'inherit',
-                                            letterSpacing: '1px'
-                                        }}
-                                    />
-                                    <button
-                                        type="button"
-                                        style={{
-                                            padding: isMobile ? '0 16px' : '0 20px',
-                                            background: 'transparent',
-                                            border: 'none',
-                                            color: '#f0f0f0',
-                                            cursor: 'pointer',
-                                            transition: 'color 0.3s ease',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}
-                                        onClick={() => setShowPassword(!showPassword)}
-                                    >
-                                        {showPassword ? (
-                                            <svg style={{
-                                                width: '18px',
-                                                height: '18px',
-                                                stroke: 'currentColor',
-                                                strokeWidth: '2',
-                                                fill: 'none'
-                                            }} viewBox="0 0 24 24">
-                                                <path d="M2 12C2 12 5 5 12 5C19 5 22 12 22 12C22 12 19 19 12 19C5 19 2 12 2 12Z" />
-                                                <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" />
-                                            </svg>
-                                        ) : (
-                                            <svg style={{
-                                                width: '18px',
-                                                height: '18px',
-                                                stroke: 'currentColor',
-                                                strokeWidth: '2',
-                                                fill: 'none'
-                                            }} viewBox="0 0 24 24">
-                                                <path d="M2 12C2 12 5 5 12 5C19 5 22 12 22 12C22 12 19 19 12 19C5 19 2 12 2 12Z" />
-                                                <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" />
-                                                <path d="M2 2L22 22" />
-                                            </svg>
-                                        )}
-                                    </button>
-                                </div>
+                            <div>
+                                <TextField
+                                    fullWidth
+                                    name="password"
+                                    label="Password"
+                                    type={showPassword ? "text" : "password"}
+                                    variant="outlined"
+                                    value={formData.password}
+                                    onChange={handleInputChange}
+                                    error={!!fieldErrors.password}
+                                    helperText={fieldErrors.password?.[0]}
+                                    onFocus={() => handleFocus('password')}
+                                    onBlur={() => handleBlur('password')}
+                                    InputLabelProps={{
+                                        shrink: focusedFields.password || !!formData.password,
+                                    }}
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start" sx={{ marginRight: '12px' }}>
+                                                <LockIcon sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />
+                                            </InputAdornment>
+                                        ),
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <IconButton
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    edge="end"
+                                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                                >
+                                                    {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                                </IconButton>
+                                            </InputAdornment>
+                                        ),
+                                        placeholder: !focusedFields.password && !formData.password ? 'Password' : '',
+                                    }}
+                                    sx={getTextFieldStyles('password', true)}
+                                />
                             </div>
 
-                            {/* Confirm Password Field - Only for Signup */}
+                            {/* Confirm Password Field - Only for Registration */}
                             {!isLogin && (
-                                <div style={{ marginBottom: isMobile ? '15px' : '20px' }}>
-                                    <div style={{
-                                        position: 'relative',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        background: 'rgba(255, 255, 255, 0.1)',
-                                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                                        borderRadius: '8px',
-                                        transition: 'all 0.3s ease'
-                                    }}>
-                                        <span style={{
-                                            padding: '0 16px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}>
-                                            <svg style={{
-                                                width: '18px',
-                                                height: '18px',
-                                                stroke: 'rgba(255, 255, 255, 0.8)',
-                                                strokeWidth: '2',
-                                                fill: 'none'
-                                            }} viewBox="0 0 24 24">
-                                                <path d="M9 12L11 14L15 10M21 12C21 13.1819 20.7672 14.3522 20.3149 15.4442C19.8626 16.5361 19.1997 17.5282 18.364 18.364C17.5282 19.1997 16.5361 19.8626 15.4442 20.3149C14.3522 20.7672 13.1819 21 12 21C10.8181 21 9.64778 20.7672 8.55585 20.3149C7.46392 19.8626 6.47177 19.1997 5.63604 18.364C4.80031 17.5282 4.13738 16.5361 3.68508 15.4442C3.23279 14.3522 3 13.1819 3 12C3 9.61305 3.94821 7.32387 5.63604 5.63604C7.32387 3.94821 9.61305 3 12 3C14.3869 3 16.6761 3.94821 18.364 5.63604C20.0518 7.32387 21 9.61305 21 12Z" />
-                                            </svg>
-                                        </span>
-                                        <input
-                                            type={showConfirmPassword ? "text" : "password"}
-                                            name="confirmPassword"
-                                            value={formData.confirmPassword}
-                                            onChange={handleInputChange}
-                                            placeholder="Confirm Password"
-                                            style={{
-                                                flex: 1,
-                                                padding: isMobile ? '14px 16px' : '16px 20px',
-                                                border: 'none',
-                                                background: 'transparent',
-                                                color: '#f0f0f0',
-                                                fontSize: isMobile ? '0.95rem' : '1rem',
-                                                outline: 'none',
-                                                fontFamily: 'inherit',
-                                                letterSpacing: '1px'
-                                            }}
-                                        />
-                                        <button
-                                            type="button"
-                                            style={{
-                                                padding: isMobile ? '0 16px' : '0 20px',
-                                                background: 'transparent',
-                                                border: 'none',
-                                                color: '#f0f0f0',
-                                                cursor: 'pointer',
-                                                transition: 'color 0.3s ease',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center'
-                                            }}
-                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        >
-                                            {showConfirmPassword ? (
-                                                <svg style={{
-                                                    width: '18px',
-                                                    height: '18px',
-                                                    stroke: 'currentColor',
-                                                    strokeWidth: '2',
-                                                    fill: 'none'
-                                                }} viewBox="0 0 24 24">
-                                                    <path d="M2 12C2 12 5 5 12 5C19 5 22 12 22 12C22 12 19 19 12 19C5 19 2 12 2 12Z" />
-                                                    <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" />
-                                                </svg>
-                                            ) : (
-                                                <svg style={{
-                                                    width: '18px',
-                                                    height: '18px',
-                                                    stroke: 'currentColor',
-                                                    strokeWidth: '2',
-                                                    fill: 'none'
-                                                }} viewBox="0 0 24 24">
-                                                    <path d="M2 12C2 12 5 5 12 5C19 5 22 12 22 12C22 12 19 19 12 19C5 19 2 12 2 12Z" />
-                                                    <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" />
-                                                    <path d="M2 2L22 22" />
-                                                </svg>
-                                            )}
-                                        </button>
-                                    </div>
+                                <div>
+                                    <TextField
+                                        fullWidth
+                                        name="confirmPassword"
+                                        label="Confirm Password"
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        variant="outlined"
+                                        value={formData.confirmPassword}
+                                        onChange={handleInputChange}
+                                        error={!!fieldErrors.confirmPassword}
+                                        helperText={fieldErrors.confirmPassword?.[0]}
+                                        onFocus={() => handleFocus('confirmPassword')}
+                                        onBlur={() => handleBlur('confirmPassword')}
+                                        InputLabelProps={{
+                                            shrink: focusedFields.confirmPassword || !!formData.confirmPassword,
+                                        }}
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start" sx={{ marginRight: '12px' }}>
+                                                    <CheckCircleIcon sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />
+                                                </InputAdornment>
+                                            ),
+                                            endAdornment: (
+                                                <InputAdornment position="end">
+                                                    <IconButton
+                                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                        edge="end"
+                                                        sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                                    >
+                                                        {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                                    </IconButton>
+                                                </InputAdornment>
+                                            ),
+                                            placeholder: !focusedFields.confirmPassword && !formData.confirmPassword ? 'Confirm Password' : '',
+                                        }}
+                                        sx={getTextFieldStyles('confirmPassword', true)}
+                                    />
                                 </div>
                             )}
 
-                            {/* Options */}
-                            <div style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                margin: isMobile ? '20px 0' : '25px 0',
-                                flexDirection: isMobile ? 'column' : 'row',
-                                gap: isMobile ? '15px' : '0'
-                            }}>
-                                <label style={{
+                            {/* Remember Me - Only for Login */}
+                            {isLogin && (
+                                <div style={{
                                     display: 'flex',
+                                    justifyContent: 'space-between',
                                     alignItems: 'center',
-                                    color: '#f0f0f0',
-                                    fontSize: '0.95rem',
-                                    cursor: 'pointer',
-                                    userSelect: 'none'
+                                    margin: isMobile ? '20px 0' : '25px 0',
+                                    flexDirection: isMobile ? 'column' : 'row',
+                                    gap: isMobile ? '15px' : '0'
                                 }}>
-                                    <input
-                                        type="checkbox"
-                                        name="rememberMe"
-                                        checked={formData.rememberMe}
-                                        onChange={handleInputChange}
-                                        style={{ display: 'none' }}
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                name="rememberMe"
+                                                checked={formData.rememberMe}
+                                                onChange={handleInputChange}
+                                                sx={{
+                                                    color: 'rgba(255, 255, 255, 0.4)',
+                                                    '&.Mui-checked': {
+                                                        color: '#f0f0f0',
+                                                    },
+                                                }}
+                                            />
+                                        }
+                                        label={
+                                            <span style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.95rem' }}>
+                                                Remember me
+                                            </span>
+                                        }
                                     />
-                                    <span style={{
-                                        width: '18px',
-                                        height: '18px',
-                                        border: '2px solid rgba(255, 255, 255, 0.4)',
-                                        borderRadius: '4px',
-                                        marginRight: '10px',
-                                        position: 'relative',
-                                        transition: 'all 0.3s ease'
-                                    }}></span>
-                                    Remember me
-                                </label>
 
-                                {isLogin && (
-                                    <button
+                                    <Button
                                         type="button"
-                                        style={{
-                                            background: 'transparent',
-                                            border: 'none',
+                                        onClick={handleForgotPassword}
+                                        sx={{
                                             color: '#f0f0f0',
                                             fontSize: '0.95rem',
                                             fontWeight: 500,
-                                            cursor: 'pointer',
-                                            transition: 'color 0.3s ease'
+                                            textTransform: 'none',
+                                            textDecoration: 'underline',
+                                            '&:hover': {
+                                                background: 'transparent',
+                                                textDecoration: 'underline',
+                                            },
                                         }}
-                                        onClick={handleForgotPassword}
                                     >
                                         Forgot password?
-                                    </button>
-                                )}
-                            </div>
+                                    </Button>
+                                </div>
+                            )}
 
                             {/* Submit Button */}
-                            <button
+                            <Button
                                 type="submit"
-                                style={{
-                                    width: '100%',
+                                fullWidth
+                                variant="contained"
+                                disabled={loading}
+                                sx={{
                                     padding: isMobile ? '16px' : '18px',
-                                    background: 'white',
+                                    background: '#ffffff',
                                     color: '#007cba',
-                                    border: 'none',
                                     borderRadius: '8px',
                                     fontSize: isMobile ? '1rem' : '1.1rem',
                                     fontWeight: 600,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease',
                                     marginBottom: isMobile ? '25px' : '30px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '10px'
+                                    textTransform: 'none',
+                                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
+                                    '&:hover': {
+                                        background: '#f0f0f0',
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)',
+                                    },
+                                    '&.Mui-disabled': {
+                                        background: 'rgba(255, 255, 255, 0.7)',
+                                        color: '#007cba',
+                                    },
                                 }}
-                                disabled={loading}
                             >
                                 {loading ? (
                                     <span style={{
@@ -867,7 +900,7 @@ const LoginSignup = () => {
                                 ) : (
                                     isLogin ? 'Sign In' : 'Create Account'
                                 )}
-                            </button>
+                            </Button>
 
                             {/* Switch Mode */}
                             <div style={{
@@ -877,21 +910,25 @@ const LoginSignup = () => {
                                 margin: isMobile ? '15px 0' : '20px 0'
                             }}>
                                 {isLogin ? "Don't have an account? " : "Already have an account? "}
-                                <button
+                                <Button
                                     type="button"
-                                    style={{
-                                        background: 'transparent',
-                                        border: 'none',
+                                    onClick={toggleMode}
+                                    sx={{
                                         color: '#f0f0f0',
                                         fontWeight: 600,
-                                        cursor: 'pointer',
-                                        padding: 0,
-                                        fontSize: 'inherit'
+                                        textTransform: 'none',
+                                        fontSize: 'inherit',
+                                        padding: '0 4px',
+                                        minWidth: 'auto',
+                                        textDecoration: 'underline',
+                                        '&:hover': {
+                                            background: 'transparent',
+                                            textDecoration: 'underline',
+                                        },
                                     }}
-                                    onClick={toggleMode}
                                 >
                                     {isLogin ? 'Sign up now' : 'Sign in'}
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>

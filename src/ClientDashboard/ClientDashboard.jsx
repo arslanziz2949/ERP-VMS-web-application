@@ -8,12 +8,11 @@ import {
   Grid,
   Paper,
   Typography,
-  Card,
+  Card as MuiCard,
   CardContent,
   Button,
   Avatar,
   LinearProgress,
-  IconButton,
   Divider,
   Chip,
   Table,
@@ -26,7 +25,7 @@ import {
   ListItem,
   ListItemText,
   ListItemAvatar,
-  Badge
+  IconButton
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -37,17 +36,16 @@ import {
   Payment as PaymentIcon,
   TrendingUp as TrendingUpIcon,
   People as PeopleIcon,
-  Notifications as NotificationsIcon,
-  CalendarToday as CalendarIcon,
   ArrowUpward as ArrowUpwardIcon,
   ArrowDownward as ArrowDownwardIcon,
-  Settings as SettingsIcon,
-  Logout as LogoutIcon,
-  Add as AddIcon
+  Settings as SettingsIcon
 } from '@mui/icons-material';
+import { useThemeValues } from '../Theme/theme'; // Adjust path as needed
+import Card from '../Components/Cards';
 
 const ClientDashboard = () => {
   const navigate = useNavigate();
+  const theme = useThemeValues();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -123,59 +121,59 @@ const ClientDashboard = () => {
     checkAuth();
   }, [navigate]);
 
-  // Dashboard stat cards
+  // Dashboard stat cards with theme integration
   const statCards = [
     {
       title: 'Total Customers',
-      value: stats.totalCustomers,
-      icon: <PeopleIcon sx={{ fontSize: 40, color: '#1976d2' }} />,
-      color: '#1976d2',
-      bgColor: '#e3f2fd',
+      value: stats.totalCustomers.toString(),
+      text: 'Total Customers',
+      heading: stats.totalCustomers.toString(),
+      image: '👥', // You'll need to replace with actual icons
       change: '+12%',
       changeType: 'increase'
     },
     {
       title: 'Active Products',
-      value: stats.activeProducts,
-      icon: <InventoryIcon sx={{ fontSize: 40, color: '#2e7d32' }} />,
-      color: '#2e7d32',
-      bgColor: '#e8f5e9',
+      value: stats.activeProducts.toString(),
+      text: 'Active Products',
+      heading: stats.activeProducts.toString(),
+      image: '📦',
       change: '+5%',
       changeType: 'increase'
     },
     {
       title: 'Sold This Month',
-      value: stats.soldThisMonth,
-      icon: <ShoppingCartIcon sx={{ fontSize: 40, color: '#ed6c02' }} />,
-      color: '#ed6c02',
-      bgColor: '#fff3e0',
+      value: stats.soldThisMonth.toString(),
+      text: 'Sold This Month',
+      heading: stats.soldThisMonth.toString(),
+      image: '🛒',
       change: '+23%',
       changeType: 'increase'
     },
     {
       title: 'Total Revenue',
       value: `$${stats.totalRevenue.toLocaleString()}`,
-      icon: <AttachMoneyIcon sx={{ fontSize: 40, color: '#9c27b0' }} />,
-      color: '#9c27b0',
-      bgColor: '#f3e5f5',
+      text: 'Total Revenue',
+      heading: `$${stats.totalRevenue.toLocaleString()}`,
+      image: '💰',
       change: '+18%',
       changeType: 'increase'
     },
     {
       title: 'Pending Invoices',
-      value: stats.pendingInvoices,
-      icon: <ReceiptIcon sx={{ fontSize: 40, color: '#d32f2f' }} />,
-      color: '#d32f2f',
-      bgColor: '#ffebee',
+      value: stats.pendingInvoices.toString(),
+      text: 'Pending Invoices',
+      heading: stats.pendingInvoices.toString(),
+      image: '📄',
       change: '-3%',
       changeType: 'decrease'
     },
     {
       title: 'Pending Payments',
-      value: stats.pendingPayments,
-      icon: <PaymentIcon sx={{ fontSize: 40, color: '#7b1fa2' }} />,
-      color: '#7b1fa2',
-      bgColor: '#f3e5f5',
+      value: stats.pendingPayments.toString(),
+      text: 'Pending Payments',
+      heading: stats.pendingPayments.toString(),
+      image: '💳',
       change: '+2',
       changeType: 'increase'
     }
@@ -183,28 +181,44 @@ const ClientDashboard = () => {
 
   if (loading) {
     return (
-      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Container sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        bgcolor: theme.palette.bg.body 
+      }}>
         <LinearProgress sx={{ width: '50%' }} />
       </Container>
     );
   }
 
   return (
-    <Box sx={{ flexGrow: 1, bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+    <Box sx={{ 
+      flexGrow: 1, 
+      bgcolor: theme.palette.bg.body, 
+      minHeight: '100vh',
+      transition: 'background-color 0.3s ease'
+    }}>
       {/* Header */}
       <Paper sx={{ 
         p: 3, 
         mb: 3, 
         borderRadius: 2,
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white'
+        background: theme.palette.bg.cardGradient,
+        color: theme.palette.text.onCard,
+        boxShadow: theme.palette.shadowLg
       }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+            <Typography variant="h4" sx={{ 
+              fontWeight: 'bold', 
+              mb: 1,
+              color: theme.palette.text.onCard
+            }}>
               Welcome back, {userData?.first_name || userData?.username || 'Client'}!
             </Typography>
-            <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
+            <Typography variant="subtitle1" sx={{ opacity: 0.9, color: theme.palette.text.onCard }}>
               Manage your business efficiently from one dashboard
             </Typography>
           </Box>
@@ -212,49 +226,15 @@ const ClientDashboard = () => {
       </Paper>
 
       <Container maxWidth="xl">
-        {/* Stats Cards Grid */}
+        {/* Stats Cards Grid - Using your custom Card component */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {statCards.map((card, index) => (
             <Grid item xs={12} sm={6} md={4} lg={2} key={index}>
-              <Card sx={{ 
-                borderRadius: 2, 
-                boxShadow: 3,
-                transition: 'transform 0.3s',
-                '&:hover': { transform: 'translateY(-5px)' }
-              }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Box>
-                      <Typography color="textSecondary" gutterBottom variant="body2">
-                        {card.title}
-                      </Typography>
-                      <Typography variant="h5" sx={{ color: card.color, fontWeight: 'bold' }}>
-                        {card.value}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ 
-                      p: 1.5, 
-                      borderRadius: '50%', 
-                      bgcolor: card.bgColor 
-                    }}>
-                      {card.icon}
-                    </Box>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {card.changeType === 'increase' ? (
-                      <ArrowUpwardIcon sx={{ color: '#2e7d32', fontSize: 16 }} />
-                    ) : (
-                      <ArrowDownwardIcon sx={{ color: '#d32f2f', fontSize: 16 }} />
-                    )}
-                    <Typography variant="caption" sx={{ 
-                      color: card.changeType === 'increase' ? '#2e7d32' : '#d32f2f',
-                      fontWeight: 'medium'
-                    }}>
-                      {card.change} this month
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
+              <Card
+                text={card.text}
+                heading={card.heading}
+                image={card.image}
+              />
             </Grid>
           ))}
         </Grid>
@@ -264,15 +244,34 @@ const ClientDashboard = () => {
           {/* Left Column - Recent Activities & Top Products */}
           <Grid item xs={12} lg={8}>
             {/* Recent Activities */}
-            <Paper sx={{ p: 3, borderRadius: 2, mb: 3 }}>
+            <Paper sx={{ 
+              p: 3, 
+              borderRadius: 2, 
+              mb: 3,
+              bgcolor: theme.palette.bg.card,
+              border: `1px solid ${theme.palette.border}`,
+              boxShadow: theme.palette.shadow,
+              '&:hover': {
+                boxShadow: theme.palette.shadowLg
+              }
+            }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                <Typography variant="h6" sx={{ 
+                  fontWeight: 'bold',
+                  color: theme.palette.text.primary
+                }}>
                   Recent Activities
                 </Typography>
                 <Button 
                   size="small" 
                   onClick={() => navigate('/client/activities')}
-                  sx={{ textTransform: 'none' }}
+                  sx={{ 
+                    textTransform: 'none',
+                    color: theme.palette.primary,
+                    '&:hover': {
+                      backgroundColor: theme.palette.primaryLight
+                    }
+                  }}
                 >
                   View All
                 </Button>
@@ -285,16 +284,20 @@ const ClientDashboard = () => {
                     sx={{ 
                       mb: 1, 
                       p: 2, 
-                      bgcolor: '#fafafa', 
+                      bgcolor: theme.mode === 'light' ? '#fafafa' : theme.palette.bg.body, 
                       borderRadius: 1,
-                      '&:hover': { bgcolor: '#f0f0f0' }
+                      border: `1px solid ${theme.palette.border}`,
+                      '&:hover': { 
+                        bgcolor: theme.mode === 'light' ? '#f0f0f0' : theme.palette.bg.header 
+                      }
                     }}
                   >
                     <ListItemAvatar>
                       <Avatar sx={{ 
-                        bgcolor: activity.type === 'sale' ? '#1976d2' : 
+                        bgcolor: activity.type === 'sale' ? theme.palette.primary : 
                                  activity.type === 'payment' ? '#2e7d32' :
-                                 activity.type === 'customer' ? '#9c27b0' : '#ed6c02'
+                                 activity.type === 'customer' ? '#9c27b0' : '#ed6c02',
+                        color: 'white'
                       }}>
                         {activity.type === 'sale' ? <ShoppingCartIcon /> :
                          activity.type === 'payment' ? <PaymentIcon /> :
@@ -304,7 +307,10 @@ const ClientDashboard = () => {
                     <ListItemText
                       primary={
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+                          <Typography variant="subtitle1" sx={{ 
+                            fontWeight: 'medium',
+                            color: theme.palette.text.primary
+                          }}>
                             {activity.type === 'sale' ? `Sale to ${activity.customer}` :
                              activity.type === 'payment' ? `Payment from ${activity.customer}` :
                              activity.type === 'customer' ? `New customer: ${activity.customer}` :
@@ -314,13 +320,17 @@ const ClientDashboard = () => {
                             <Chip 
                               label={activity.amount} 
                               size="small" 
-                              sx={{ bgcolor: '#e8f5e9', color: '#2e7d32' }}
+                              sx={{ 
+                                bgcolor: theme.palette.primaryLight, 
+                                color: theme.palette.primary,
+                                fontWeight: 'medium'
+                              }}
                             />
                           )}
                         </Box>
                       }
                       secondary={
-                        <Typography variant="body2" color="textSecondary">
+                        <Typography variant="body2" color={theme.palette.text.muted}>
                           {activity.time}
                         </Typography>
                       }
@@ -331,15 +341,33 @@ const ClientDashboard = () => {
             </Paper>
 
             {/* Top Selling Products */}
-            <Paper sx={{ p: 3, borderRadius: 2 }}>
+            <Paper sx={{ 
+              p: 3, 
+              borderRadius: 2,
+              bgcolor: theme.palette.bg.card,
+              border: `1px solid ${theme.palette.border}`,
+              boxShadow: theme.palette.shadow,
+              '&:hover': {
+                boxShadow: theme.palette.shadowLg
+              }
+            }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                <Typography variant="h6" sx={{ 
+                  fontWeight: 'bold',
+                  color: theme.palette.text.primary
+                }}>
                   Top Selling Products
                 </Typography>
                 <Button 
                   size="small" 
                   onClick={() => navigate('/client/products')}
-                  sx={{ textTransform: 'none' }}
+                  sx={{ 
+                    textTransform: 'none',
+                    color: theme.palette.primary,
+                    '&:hover': {
+                      backgroundColor: theme.palette.primaryLight
+                    }
+                  }}
                 >
                   View All Products
                 </Button>
@@ -348,12 +376,22 @@ const ClientDashboard = () => {
               <TableContainer>
                 <Table>
                   <TableHead>
-                    <TableRow>
-                      <TableCell>Product Name</TableCell>
-                      <TableCell>Category</TableCell>
-                      <TableCell align="right">Price</TableCell>
-                      <TableCell align="right">Sold</TableCell>
-                      <TableCell align="right">Revenue</TableCell>
+                    <TableRow sx={{ bgcolor: theme.palette.bg.header }}>
+                      <TableCell sx={{ color: theme.palette.text.primary, fontWeight: 'bold' }}>
+                        Product Name
+                      </TableCell>
+                      <TableCell sx={{ color: theme.palette.text.primary, fontWeight: 'bold' }}>
+                        Category
+                      </TableCell>
+                      <TableCell align="right" sx={{ color: theme.palette.text.primary, fontWeight: 'bold' }}>
+                        Price
+                      </TableCell>
+                      <TableCell align="right" sx={{ color: theme.palette.text.primary, fontWeight: 'bold' }}>
+                        Sold
+                      </TableCell>
+                      <TableCell align="right" sx={{ color: theme.palette.text.primary, fontWeight: 'bold' }}>
+                        Revenue
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -361,15 +399,28 @@ const ClientDashboard = () => {
                       <TableRow 
                         key={product.id}
                         hover
-                        sx={{ cursor: 'pointer' }}
+                        sx={{ 
+                          cursor: 'pointer',
+                          '&:hover': {
+                            bgcolor: theme.palette.bg.header
+                          }
+                        }}
                         onClick={() => navigate(`/client/products/${product.id}`)}
                       >
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Avatar sx={{ bgcolor: '#1976d2', width: 32, height: 32 }}>
+                            <Avatar sx={{ 
+                              bgcolor: theme.palette.primary, 
+                              color: 'white',
+                              width: 32, 
+                              height: 32 
+                            }}>
                               <InventoryIcon sx={{ fontSize: 16 }} />
                             </Avatar>
-                            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                            <Typography variant="body2" sx={{ 
+                              fontWeight: 'medium',
+                              color: theme.palette.text.primary
+                            }}>
                               {product.name}
                             </Typography>
                           </Box>
@@ -379,20 +430,30 @@ const ClientDashboard = () => {
                             label={product.category} 
                             size="small" 
                             variant="outlined"
+                            sx={{ 
+                              borderColor: theme.palette.primary,
+                              color: theme.palette.text.primary
+                            }}
                           />
                         </TableCell>
                         <TableCell align="right">
-                          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          <Typography variant="body2" sx={{ 
+                            fontWeight: 'bold',
+                            color: theme.palette.text.primary
+                          }}>
                             {product.price}
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
-                          <Typography variant="body2">
+                          <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
                             {product.sold}
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
-                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>
+                          <Typography variant="body2" sx={{ 
+                            fontWeight: 'bold', 
+                            color: theme.palette.primary
+                          }}>
                             {product.revenue}
                           </Typography>
                         </TableCell>
@@ -407,15 +468,34 @@ const ClientDashboard = () => {
           {/* Right Column - Recent Customers & Summary */}
           <Grid item xs={12} lg={4}>
             {/* Recent Customers */}
-            <Paper sx={{ p: 3, borderRadius: 2, mb: 3 }}>
+            <Paper sx={{ 
+              p: 3, 
+              borderRadius: 2, 
+              mb: 3,
+              bgcolor: theme.palette.bg.card,
+              border: `1px solid ${theme.palette.border}`,
+              boxShadow: theme.palette.shadow,
+              '&:hover': {
+                boxShadow: theme.palette.shadowLg
+              }
+            }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                <Typography variant="h6" sx={{ 
+                  fontWeight: 'bold',
+                  color: theme.palette.text.primary
+                }}>
                   Recent Customers
                 </Typography>
                 <Button 
                   size="small" 
                   onClick={() => navigate('/client/customers')}
-                  sx={{ textTransform: 'none' }}
+                  sx={{ 
+                    textTransform: 'none',
+                    color: theme.palette.primary,
+                    '&:hover': {
+                      backgroundColor: theme.palette.primaryLight
+                    }
+                  }}
                 >
                   View All
                 </Button>
@@ -428,33 +508,46 @@ const ClientDashboard = () => {
                     sx={{ 
                       mb: 1, 
                       p: 2, 
-                      bgcolor: '#fafafa', 
+                      bgcolor: theme.mode === 'light' ? '#fafafa' : theme.palette.bg.body,
                       borderRadius: 1,
-                      '&:hover': { bgcolor: '#f0f0f0' }
+                      border: `1px solid ${theme.palette.border}`,
+                      cursor: 'pointer',
+                      '&:hover': { 
+                        bgcolor: theme.mode === 'light' ? '#f0f0f0' : theme.palette.bg.header 
+                      }
                     }}
                     onClick={() => navigate(`/client/customers/${customer.id}`)}
                   >
                     <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: '#9c27b0' }}>
+                      <Avatar sx={{ 
+                        bgcolor: theme.palette.primary,
+                        color: 'white'
+                      }}>
                         {customer.name.charAt(0)}
                       </Avatar>
                     </ListItemAvatar>
                     <ListItemText
                       primary={
-                        <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+                        <Typography variant="subtitle1" sx={{ 
+                          fontWeight: 'medium',
+                          color: theme.palette.text.primary
+                        }}>
                           {customer.name}
                         </Typography>
                       }
                       secondary={
                         <>
-                          <Typography variant="body2" color="textSecondary">
+                          <Typography variant="body2" color={theme.palette.text.muted}>
                             {customer.email}
                           </Typography>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-                            <Typography variant="caption" color="textSecondary">
+                            <Typography variant="caption" color={theme.palette.text.muted}>
                               {customer.phone}
                             </Typography>
-                            <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                            <Typography variant="caption" sx={{ 
+                              fontWeight: 'bold', 
+                              color: theme.palette.primary
+                            }}>
                               {customer.totalSpent} spent
                             </Typography>
                           </Box>
@@ -467,8 +560,21 @@ const ClientDashboard = () => {
             </Paper>
 
             {/* Profile & Business Summary */}
-            <Paper sx={{ p: 3, borderRadius: 2 }}>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold' }}>
+            <Paper sx={{ 
+              p: 3, 
+              borderRadius: 2,
+              bgcolor: theme.palette.bg.card,
+              border: `1px solid ${theme.palette.border}`,
+              boxShadow: theme.palette.shadow,
+              '&:hover': {
+                boxShadow: theme.palette.shadowLg
+              }
+            }}>
+              <Typography variant="h6" sx={{ 
+                mb: 3, 
+                fontWeight: 'bold',
+                color: theme.palette.text.primary
+              }}>
                 Business Summary
               </Typography>
               
@@ -477,7 +583,8 @@ const ClientDashboard = () => {
                   sx={{ 
                     width: 100, 
                     height: 100, 
-                    bgcolor: '#1976d2',
+                    bgcolor: theme.palette.primary,
+                    color: 'white',
                     fontSize: '2.5rem',
                     mb: 2
                   }}
@@ -486,14 +593,17 @@ const ClientDashboard = () => {
                 </Avatar>
                 
                 <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 'bold',
+                    color: theme.palette.text.primary
+                  }}>
                     {userData?.first_name || userData?.username || 'Client User'}
                   </Typography>
                   <Chip 
                     label="BUSINESS CLIENT" 
                     size="small" 
                     sx={{ 
-                      bgcolor: '#1976d2', 
+                      bgcolor: theme.palette.primary, 
                       color: 'white',
                       fontWeight: 'bold',
                       mt: 1
@@ -501,27 +611,49 @@ const ClientDashboard = () => {
                   />
                 </Box>
 
-                <Divider sx={{ width: '100%', my: 2 }} />
+                <Divider sx={{ 
+                  width: '100%', 
+                  my: 2,
+                  borderColor: theme.palette.border
+                }} />
 
                 {/* Summary Stats */}
                 <Box sx={{ width: '100%' }}>
                   <Grid container spacing={2}>
                     <Grid item xs={6}>
-                      <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: '#e8f5e9', borderRadius: 2 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>
+                      <Box sx={{ 
+                        textAlign: 'center', 
+                        p: 1.5, 
+                        bgcolor: theme.palette.primaryLight, 
+                        borderRadius: 2,
+                        border: `1px solid ${theme.palette.primary}`
+                      }}>
+                        <Typography variant="h6" sx={{ 
+                          fontWeight: 'bold', 
+                          color: theme.palette.primary
+                        }}>
                           {stats.activeProducts}
                         </Typography>
-                        <Typography variant="caption" color="textSecondary">
+                        <Typography variant="caption" color={theme.palette.text.muted}>
                           Active Products
                         </Typography>
                       </Box>
                     </Grid>
                     <Grid item xs={6}>
-                      <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: '#e3f2fd', borderRadius: 2 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                      <Box sx={{ 
+                        textAlign: 'center', 
+                        p: 1.5, 
+                        bgcolor: theme.palette.primaryLight, 
+                        borderRadius: 2,
+                        border: `1px solid ${theme.palette.primary}`
+                      }}>
+                        <Typography variant="h6" sx={{ 
+                          fontWeight: 'bold', 
+                          color: theme.palette.primary
+                        }}>
                           {stats.totalCustomers}
                         </Typography>
-                        <Typography variant="caption" color="textSecondary">
+                        <Typography variant="caption" color={theme.palette.text.muted}>
                           Total Customers
                         </Typography>
                       </Box>
@@ -530,13 +662,24 @@ const ClientDashboard = () => {
                 </Box>
 
                 <Box sx={{ width: '100%', mt: 2 }}>
-                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                  <Typography variant="body2" color={theme.palette.text.muted} gutterBottom>
                     Contact Information
                   </Typography>
-                  <Typography variant="body2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body2" sx={{ 
+                    mb: 1, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1,
+                    color: theme.palette.text.secondary
+                  }}>
                     📧 {userData?.email || 'No email provided'}
                   </Typography>
-                  <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body2" sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1,
+                    color: theme.palette.text.secondary
+                  }}>
                     📱 {userData?.phone_number || 'No phone provided'}
                   </Typography>
                 </Box>
@@ -546,7 +689,15 @@ const ClientDashboard = () => {
                   variant="outlined"
                   startIcon={<SettingsIcon />}
                   onClick={() => navigate('/client/settings')}
-                  sx={{ mt: 2 }}
+                  sx={{ 
+                    mt: 2,
+                    borderColor: theme.palette.primary,
+                    color: theme.palette.primary,
+                    '&:hover': {
+                      borderColor: theme.palette.primary,
+                      backgroundColor: theme.palette.primaryLight
+                    }
+                  }}
                 >
                   Business Settings
                 </Button>
@@ -556,7 +707,17 @@ const ClientDashboard = () => {
         </Grid>
       </Container>
 
-      <ToastContainer />
+      <ToastContainer 
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </Box>
   );
 };
